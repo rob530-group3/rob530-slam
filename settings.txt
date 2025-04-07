@@ -1,0 +1,13 @@
+# ==== Algorithm Settings ====
+feature_algorithm = SIFT        # Options: ORB, SIFT, SURF
+matcher_type = BF_KNN   # Options: BF_crosscheck, BF_KNN, FLANN_KNN
+
+trajectory_mode = both  # Options: raw, aligned, both
+
+# ==== File Paths ====
+left_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_00/data
+right_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_01/data
+timestamp_file_left= ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_00/timestamps.txt
+timestamp_file_right= ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_01/timestamps.txt
+calib_file = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_calib/2011_09_26/calib_cam_to_cam.txt
+oxts_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/oxts/data
