@@ -16,7 +16,7 @@ def load_calibration(file_path):
     P_left = calib['P_rect_00'].reshape(3, 4)
     P_right = calib['P_rect_01'].reshape(3, 4)
     fx = P_left[0, 0]
-    baseline = abs(P_right[0, 3] - P_left[0, 3]) / fx
+    baseline = np.abs(P_right[0, 3] - P_left[0, 3]) / fx
     return K_left, fx, baseline
 
 def load_timestamps(path):

@@ -42,10 +42,17 @@ def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy):
                         y = (v_prev - cy) * z / fy
                         pts_3d.append([x, y, z])
                         pts_2d.append([u_curr, v_curr])
+            
+            # depth_vals = [pt[2] for pt in pts_3d if pt[2] > 0]
+            # if len(depth_vals) > 0:
+            #     print(f"[DEBUG] PnP Depth | mean: {np.mean(depth_vals):.2f}, min: {np.min(depth_vals):.2f}, max: {np.max(depth_vals):.2f}")
+            # else:
+            #     print(f"[WARNING] No valid depth points for frame {i}")
 
             if len(pts_3d) >= 6:
                 pts_3d = np.array(pts_3d, dtype=np.float32)
                 pts_2d = np.array(pts_2d, dtype=np.float32)
+                # print(f"[DEBUG] PnP input | 3D: {pts_3d.shape}, 2D: {pts_2d.shape}")    # debug
 
                 success, rvec, tvec, inliers = cv2.solvePnPRansac(
                     pts_3d, pts_2d, K, None, reprojectionError=8.0, flags=cv2.SOLVEPNP_ITERATIVE)

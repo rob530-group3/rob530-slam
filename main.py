@@ -96,6 +96,21 @@ def main():
         plot_trajectories(aligned_vo, gt, title="VO (Aligned) vs Ground Truth")
     elif mode == "both":
         plot_trajectories(trajectory_enu, gt, aligned_vo=aligned_vo, title="VO (Raw + Aligned) vs Ground Truth")
+    
+    # # debug
+    # vo_np = np.array(trajectory_enu)  # ENU coords (same as aligned)
+    # gt_np = np.array(ground_truth[:len(vo_np)])
+
+    # # Plot Z component
+    # plt.figure()
+    # plt.plot(vo_np[:, 2], label="VO Z (Up)")
+    # plt.plot(gt_np[:, 2], label="GT Z (Up)")
+    # plt.title("Z-axis (Vertical) Drift")
+    # plt.xlabel("Frame")
+    # plt.ylabel("Z (Up)")
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
 
 
 
