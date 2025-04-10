@@ -25,7 +25,7 @@ def main():
     settings["timestamp_file_right"]
     )
     
-    # Visualization setting
+    # Visualization settings
     traj_mode = settings.get("trajectory_mode", "both")
     plot_mode = settings.get("plot_mode", "3d").strip() # 2D or 3D plot mode
     
@@ -70,21 +70,6 @@ def main():
         plot_trajectories(aligned_vo, gt, title="VO (Aligned) vs Ground Truth", mode=plot_mode)
     elif traj_mode == "both":
         plot_trajectories(trajectory_enu, gt, aligned_vo=aligned_vo, title="VO (Raw + Aligned) vs Ground Truth", mode=plot_mode)
-    
-    # # debug
-    # vo_np = np.array(trajectory_enu)  # ENU coords (same as aligned)
-    # gt_np = np.array(ground_truth[:len(vo_np)])
-
-    # # Plot Z component
-    # plt.figure()
-    # plt.plot(vo_np[:, 2], label="VO Z (Up)")
-    # plt.plot(gt_np[:, 2], label="GT Z (Up)")
-    # plt.title("Z-axis (Vertical) Drift")
-    # plt.xlabel("Frame")
-    # plt.ylabel("Z (Up)")
-    # plt.legend()
-    # plt.grid(True)
-    # plt.show()
 
 if __name__ == "__main__":
     main()
