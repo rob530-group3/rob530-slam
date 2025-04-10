@@ -25,6 +25,10 @@ def main():
     settings["timestamp_file_right"]
     )
     
+    # Visualization setting
+    traj_mode = settings.get("trajectory_mode", "both")
+    plot_mode = settings.get("plot_mode", "3d").strip() # 2D or 3D plot mode
+    
     depths = compute_depth_maps(left_imgs, right_imgs, fx, baseline)
     
     ## DEBUG:
@@ -58,11 +62,8 @@ def main():
         print(f"[ERROR] Aligned VO RMSE: {aligned_rmse:.4f} meters")
 
     # Visualization mode based on settings
-    traj_mode = settings.get("trajectory_mode", "both")
-    # 2D or 3D plot mode
-    plot_mode = settings.get("plot_mode", "3d").strip()
     print("Plot mode = ", plot_mode)
-
+    
     if traj_mode == "raw":
         plot_trajectories(trajectory_enu, gt, title="VO (Raw) vs Ground Truth", mode=plot_mode)
     elif traj_mode == "aligned":

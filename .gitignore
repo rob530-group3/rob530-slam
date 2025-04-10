@@ -7,6 +7,3 @@ raw/*
 # Allow these folders explicitly
 !raw/2011_09_26/2011_09_26_calib/
 !raw/2011_09_26/2011_09_26_drive_0002_sync/
-!raw/2011_09_26/2011_09_26_drive_0002_tracklets/
-!raw/2011_09_26/2011_09_26_drive_0009_sync/
-!raw/2011_09_26/2011_09_26_drive_0009_tracklets/
