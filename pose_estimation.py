@@ -123,11 +123,11 @@ def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy, u
                 if 0 <= u_prev < prev_depth.shape[1] and 0 <= v_prev < prev_depth.shape[0]:
                     z = prev_depth[v_prev, u_prev]
 
-                    if 0.1 < z < 80: # Filter bad depth
-                        x = (u_prev - cx) * z / fx
-                        y = (v_prev - cy) * z / fy
-                        pts_3d.append([x, y, z])
-                        pts_2d.append([u_curr, v_curr])
+                    # if 0.1 < z < 80: # Filter bad depth
+                    x = (u_prev - cx) * z / fx
+                    y = (v_prev - cy) * z / fy
+                    pts_3d.append([x, y, z])
+                    pts_2d.append([u_curr, v_curr])
                 
             # depth_vals = [pt[2] for pt in pts_3d if pt[2] > 0]
             # if len(depth_vals) > 0:
