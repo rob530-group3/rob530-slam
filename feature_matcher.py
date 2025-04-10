@@ -1,6 +1,3 @@
-
-import cv2
-
 import cv2
 
 def initialize_feature_detector(settings):

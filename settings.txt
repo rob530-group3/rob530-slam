@@ -3,6 +3,7 @@ feature_algorithm = SIFT        # Options: ORB, SIFT, SURF
 matcher_type = BF_KNN   # Options: BF_crosscheck, BF_KNN, FLANN_KNN
 
 trajectory_mode = aligned  # Options: raw, aligned, both
+plot_mode = 2d          # Options: 2d, 3d
 
 # ==== File Paths ====
 left_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_00/data

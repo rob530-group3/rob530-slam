@@ -17,6 +17,7 @@ def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy):
     prev_des = None
     prev_depth = None
 
+    print("---- Estimating trajectory ----")
     for i in range(len(left_imgs)):
         img = cv2.imread(left_imgs[i], cv2.IMREAD_GRAYSCALE)
         depth = depth_maps[i]

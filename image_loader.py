@@ -3,6 +3,7 @@ import os
 import cv2
 import glob
 import numpy as np
+from tqdm import tqdm
 from calibration import load_timestamps
 
 def sync_stereo_indices(left_ts, right_ts, max_diff=0.02):
@@ -33,7 +34,8 @@ def load_image_pairs(left_folder, right_folder, left_ts_file, right_ts_file):
     left_paths = []
     right_paths = []
 
-    for l_idx, r_idx in matched_indices:
+    print("---- Loading images ----")
+    for l_idx, r_idx in tqdm(list(matched_indices)):
         left_path = os.path.join(left_folder, left_images[l_idx])
         right_path = os.path.join(right_folder, right_images[r_idx])
 
@@ -51,7 +53,8 @@ def compute_depth_maps(left_imgs, right_imgs, fx, baseline):
         speckleWindowSize=100, speckleRange=32)
     
     depth_maps = []
-    for left, right in zip(left_imgs, right_imgs):
+    print("---- Computing depths ----")
+    for left, right in tqdm(zip(left_imgs, right_imgs)):
         imgL = cv2.imread(left, cv2.IMREAD_GRAYSCALE)
         imgR = cv2.imread(right, cv2.IMREAD_GRAYSCALE)
         disparity = stereo.compute(imgL, imgR).astype(np.float32) / 16.0
