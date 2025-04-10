@@ -1,8 +1,10 @@
-# Ignore everything in raw/
-raw/
+# Ignore everything in raw
+raw/*
 
-# But don't ignore this folder
+# Allow the top-level subfolder
 !raw/2011_09_26/
+
+# Allow these folders explicitly
 !raw/2011_09_26/2011_09_26_calib/
 !raw/2011_09_26/2011_09_26_drive_0002_sync/
 !raw/2011_09_26/2011_09_26_drive_0002_tracklets/

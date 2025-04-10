@@ -54,7 +54,7 @@ def compute_depth_maps(left_imgs, right_imgs, fx, baseline):
     
     depth_maps = []
     print("---- Computing depths ----")
-    for left, right in tqdm(zip(left_imgs, right_imgs)):
+    for left, right in tqdm(zip(left_imgs, right_imgs), total=len(left_imgs)):
         imgL = cv2.imread(left, cv2.IMREAD_GRAYSCALE)
         imgR = cv2.imread(right, cv2.IMREAD_GRAYSCALE)
         disparity = stereo.compute(imgL, imgR).astype(np.float32) / 16.0

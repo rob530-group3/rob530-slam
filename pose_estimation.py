@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
 from feature_matcher import match_features
+from tqdm import tqdm
 
-def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy):
+def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy, use_tqdm=True):
     fx = K[0, 0]
     fy = K[1, 1]
     cx = K[0, 2]
@@ -18,7 +19,10 @@ def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy):
     prev_depth = None
 
     print("---- Estimating trajectory ----")
-    for i in range(len(left_imgs)):
+
+    iterator = tqdm(range(len(left_imgs))) if use_tqdm else range(len(left_imgs))
+
+    for i in iterator:
         img = cv2.imread(left_imgs[i], cv2.IMREAD_GRAYSCALE)
         depth = depth_maps[i]
 
@@ -38,12 +42,12 @@ def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy):
                 if 0 <= u_prev < prev_depth.shape[1] and 0 <= v_prev < prev_depth.shape[0]:
                     z = prev_depth[v_prev, u_prev]
 
-                    if 0.1 < z < 80:  # Filter bad depth
+                    if 0.1 < z < 80: # Filter bad depth
                         x = (u_prev - cx) * z / fx
                         y = (v_prev - cy) * z / fy
                         pts_3d.append([x, y, z])
                         pts_2d.append([u_curr, v_curr])
-            
+                
             # depth_vals = [pt[2] for pt in pts_3d if pt[2] > 0]
             # if len(depth_vals) > 0:
             #     print(f"[DEBUG] PnP Depth | mean: {np.mean(depth_vals):.2f}, min: {np.min(depth_vals):.2f}, max: {np.max(depth_vals):.2f}")
@@ -60,18 +64,16 @@ def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy):
 
                 if success:
                     R, _ = cv2.Rodrigues(rvec)
+                    t_f = t_f + R_f @ tvec
+                    R_f = R @ R_f
+                    trajectory.append(t_f.flatten())
 
-                    # Optional filter: skip large jumps
-                    if np.linalg.norm(tvec) < 3.0:
-                        t_f = t_f + R_f @ tvec
-                        R_f = R @ R_f
-                        trajectory.append(t_f.flatten())
+                    if not use_tqdm:
                         print(f"[Frame {i}] Δt = {np.linalg.norm(tvec):.3f}, Inliers = {len(inliers)}")
-                    else:
-                        print(f"[Frame {i}] Large motion skipped: Δt = {np.linalg.norm(tvec):.3f}")
-                else:
-                    print(f"[Frame {i}] solvePnPRansac failed.")
             else:
+
+                    print(f"[Frame {i}] solvePnPRansac failed.")
+        else:
                 print(f"[Frame {i}] Not enough valid 3D–2D points: {len(pts_3d)}")
 
         prev_img = img
@@ -80,4 +82,3 @@ def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy):
         prev_depth = depth
 
     return trajectory
-

@@ -47,13 +47,15 @@ def main():
 
     # Compute RMSE for raw VO
     raw_rmse = compute_ate_rmse(trajectory_enu, gt)
-    print(f"[ERROR] Raw VO RMSE: {raw_rmse:.4f} meters")
+    if traj_mode == "raw" or "both":
+        print(f"[ERROR] Raw VO RMSE: {raw_rmse:.4f} meters")
 
     # Align VO → GT
     aligned_vo, scale = align_trajectories(trajectory_enu, gt)
     aligned_rmse = compute_ate_rmse(aligned_vo, gt)
-    print(f"[INFO] Alignment scale: {scale:.4f}")   # aligned_vo = s * R * VO + t -> s = 1.00 is the best.
-    print(f"[ERROR] Aligned VO RMSE: {aligned_rmse:.4f} meters")
+    if traj_mode == "aligned" or "both":
+        print(f"[INFO] Alignment scale: {scale:.4f}")   # aligned_vo = s * R * VO + t -> s = 1.00 is the best.
+        print(f"[ERROR] Aligned VO RMSE: {aligned_rmse:.4f} meters")
 
     # Visualization mode based on settings
     traj_mode = settings.get("trajectory_mode", "both")
