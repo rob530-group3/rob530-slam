@@ -1,8 +1,8 @@
 # Ignore everything in raw
 raw/*
 
-# Allow the top-level subfolder
-!raw/2011_09_26/
+# # Allow the top-level subfolder
+# !raw/2011_09_26/
 
 # Allow these folders explicitly
 !raw/2011_09_26/2011_09_26_calib/
