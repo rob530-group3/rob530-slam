@@ -103,18 +103,18 @@ def main():
 
     # Trajectory Plot
     print("Plot mode = ", plot_mode)
-    # if traj_mode == "raw":
-    #     plot_trajectories(raw_vo, gt, title="VO (Raw) vs Ground Truth", mode=plot_mode)
-    # elif traj_mode == "aligned":
-    #     plot_trajectories(aligned_vo, gt, title="VO (Aligned) vs Ground Truth", mode=plot_mode)
-    # elif traj_mode == "both":
-    #     plot_trajectories(raw_vo, gt, aligned_vo=aligned_vo, title="VO (Raw + Aligned) vs Ground Truth", mode=plot_mode)
+    if traj_mode == "raw":
+        plot_trajectories(raw_vo, gt, title="VO (Raw) vs Ground Truth", mode=plot_mode)
+    elif traj_mode == "aligned":
+        plot_trajectories(aligned_vo, gt, title="VO (Aligned) vs Ground Truth", mode=plot_mode)
+    elif traj_mode == "both":
+        plot_trajectories(raw_vo, gt, aligned_vo=aligned_vo, title="VO (Raw + Aligned) vs Ground Truth", mode=plot_mode)
 
     # 3D Mapping with optional 2D projection
     if enable_mapping:
         run_visual_mapping(
             left_colored_imgs, depths, aligned_trajectory, K, settings, DEBUG_MAPPING,
-            aligned_vo=aligned_vo, gt=gt, R_align=R_align, t_align=t_align, scale=scale
+            aligned_vo=aligned_vo, gt=gt
         )
 
 if __name__ == "__main__":

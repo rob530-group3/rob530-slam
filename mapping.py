@@ -5,7 +5,7 @@ from tqdm import tqdm
 from mapping_utils import *
 
 def run_visual_mapping(left_colored_imgs, depths, aligned_trajectory, K, settings,
-                       debug=False, aligned_vo=None, gt=None, R_align=None, t_align=None, scale=None):
+                       debug=False, aligned_vo=None, gt=None):
     """
     Visualizes a 3D or 2D map reconstructed from aligned visual odometry trajectory.
 
