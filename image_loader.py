@@ -21,7 +21,9 @@ def sync_stereo_indices(left_ts, right_ts, max_diff=0.02):
 
     return matched_indices
 
-def load_image_pairs(left_folder, right_folder, left_ts_file, right_ts_file):
+def load_image_pairs(left_folder, right_folder,
+                    left_rgb_folder, right_rgb_folder,
+                    left_ts_file, right_ts_file):
     left_ts = load_timestamps(left_ts_file)
     right_ts = load_timestamps(right_ts_file)
     matched_indices = sync_stereo_indices(left_ts, right_ts)
@@ -29,19 +31,35 @@ def load_image_pairs(left_folder, right_folder, left_ts_file, right_ts_file):
     left_images = sorted(os.listdir(left_folder))
     right_images = sorted(os.listdir(right_folder))
 
-    left_paths = []
-    right_paths = []
+    left_gray_paths = []
+    right_gray_paths = []
+    left_rgb_images = []
+    right_rgb_images = []
 
     print("---- Loading images ----")
     for l_idx, r_idx in tqdm(list(matched_indices)):
-        left_path = os.path.join(left_folder, left_images[l_idx])
-        right_path = os.path.join(right_folder, right_images[r_idx])
+        left_gray_path = os.path.join(left_folder, left_images[l_idx])
+        right_gray_path = os.path.join(right_folder, right_images[r_idx])
 
-        if os.path.exists(left_path) and os.path.exists(right_path):
-            left_paths.append(left_path)
-            right_paths.append(right_path)
+        left_rgb_path = os.path.join(left_rgb_folder, left_images[l_idx])
+        right_rgb_path = os.path.join(right_rgb_folder, right_images[r_idx])
 
-    return left_paths, right_paths
+        if all(map(os.path.exists, [left_gray_path, right_gray_path,
+                                    left_rgb_path, right_rgb_path])):
+            left_gray_paths.append(left_gray_path)
+            right_gray_paths.append(right_gray_path)
+
+            # Load RGB images
+            left_rgb = cv2.imread(left_rgb_path)
+            right_rgb = cv2.imread(right_rgb_path)
+
+            if left_rgb is not None and right_rgb is not None:
+                left_rgb = cv2.cvtColor(left_rgb, cv2.COLOR_BGR2RGB)
+                right_rgb = cv2.cvtColor(right_rgb, cv2.COLOR_BGR2RGB)
+                left_rgb_images.append(left_rgb)
+                right_rgb_images.append(right_rgb)
+
+    return left_gray_paths, right_gray_paths, left_rgb_images, right_rgb_images
 
 def compute_depth_maps(left_imgs, right_imgs, fx, baseline):
     stereo = cv2.StereoSGBM_create(

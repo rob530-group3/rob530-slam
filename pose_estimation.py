@@ -66,7 +66,7 @@ def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy, u
                     R, _ = cv2.Rodrigues(rvec)
                     t_f = t_f + R_f @ tvec
                     R_f = R @ R_f
-                    trajectory.append(t_f.flatten())
+                    trajectory.append((R_f.copy(), t_f.copy()))
 
                     if not use_tqdm:
                         print(f"[Frame {i}] Δt = {np.linalg.norm(tvec):.3f}, Inliers = {len(inliers)}")
