@@ -177,7 +177,14 @@ def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None):
 
     elif mode == "rgb":
         colors = np.asarray(pcd.colors)
-        plt.scatter(x, y, c=colors, s=1)
+        # Clip RGB values to [0,1] to avoid ValueErrors
+        colors = np.clip(colors, 0.0, 1.0)
+
+        # Only keep points that have valid color entries
+        if len(colors) != len(x):
+            print("[WARN] Color count does not match point count — skipping RGB plot.")
+        else:
+            plt.scatter(x, y, c=colors, s=1)
 
     elif mode == "density":
         hist, xedges, yedges = np.histogram2d(x, y, bins=500)

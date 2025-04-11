@@ -1,7 +1,7 @@
 # ==== Algorithm Settings ====
 feature_algorithm = SIFT        # Options: ORB, SIFT, SURF
 matcher_type = FLANN_KNN   # Options: BF_crosscheck, BF_KNN, FLANN_KNN
-plot_mode = 3d          # Options: 2d, 3d
+plot_mode = 2d          # Options: 2d, 3d
 
 # localization
 trajectory_mode = aligned  # Options: raw, aligned, both
