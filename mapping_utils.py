@@ -1,6 +1,7 @@
 # mapping_utils.py
 import open3d as o3d
 import numpy as np
+import matplotlib.pyplot as plt
 
 def backproject_depth_to_points(depth, K, mask=None):
     fx = K[0, 0]
@@ -147,3 +148,64 @@ def voxel_downsample_point_cloud(pcd, voxel_size=0.2):
 def remove_statistical_outliers(pcd, nb_neighbors=20, std_ratio=2.0):
     cl, ind = pcd.remove_statistical_outlier(nb_neighbors=nb_neighbors, std_ratio=std_ratio)
     return pcd.select_by_index(ind)
+
+
+def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None):
+    """
+    Visualize a 2D top-down map from a 3D point cloud with optional trajectory overlays.
+
+    Args:
+        pcd (o3d.geometry.PointCloud): Input colored point cloud.
+        mode (str): Visualization mode - 'height', 'rgb', or 'density'.
+        aligned_vo (np.ndarray): Optional aligned VO trajectory (Nx3).
+        gt (np.ndarray): Optional ground truth trajectory (Nx3).
+    """
+    points = np.asarray(pcd.points)
+    if len(points) == 0:
+        print("[WARN] Point cloud is empty.")
+        return
+
+    x = points[:, 0]
+    y = points[:, 1]
+
+    plt.figure(figsize=(8, 6))
+
+    if mode == "height":
+        z = points[:, 2]
+        sc = plt.scatter(x, y, c=z, cmap='viridis', s=1)
+        plt.colorbar(sc, label="Height (Z)")
+
+    elif mode == "rgb":
+        colors = np.asarray(pcd.colors)
+        plt.scatter(x, y, c=colors, s=1)
+
+    elif mode == "density":
+        hist, xedges, yedges = np.histogram2d(x, y, bins=500)
+        plt.imshow(
+            hist.T,
+            origin='lower',
+            extent=[x.min(), x.max(), y.min(), y.max()],
+            cmap='hot',
+            aspect='auto'
+        )
+        plt.colorbar(label='Point Density')
+
+    else:
+        raise ValueError("Invalid mode. Choose from 'height', 'rgb', or 'density'.")
+
+    # Optional trajectory overlays
+    if aligned_vo is not None:
+        plt.plot(aligned_vo[:, 0], aligned_vo[:, 1], 'c-', label='Aligned VO', linewidth=2)
+
+    if gt is not None:
+        plt.plot(gt[:, 0], gt[:, 1], 'r--', label='Ground Truth', linewidth=2)
+
+    if aligned_vo is not None or gt is not None:
+        plt.legend()
+
+    plt.title(f"Top-Down 2D Map (Mode: {mode})")
+    plt.xlabel("X (East)")
+    plt.ylabel("Y (North)")
+    plt.axis('equal')
+    plt.grid(True)
+    plt.show()

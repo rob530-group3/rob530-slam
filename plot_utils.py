@@ -66,7 +66,7 @@ def align_trajectories(vo, gt, anchor_origin=True):
         t = mu_gt.T - scale * R @ mu_vo.T
 
     aligned_vo = (scale * R @ vo.T).T + t.T
-    return aligned_vo, scale
+    return aligned_vo, scale, R, t
 
 def compute_ate_rmse(vo, gt):
     assert vo.shape == gt.shape

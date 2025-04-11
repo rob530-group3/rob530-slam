@@ -29,7 +29,7 @@ def main():
     )
 
     traj_mode = settings.get("trajectory_mode", "both")
-    plot_mode = settings.get("plot_mode", "3d").strip()
+    plot_mode = settings.get("plot_mode", "3d")
     enable_mapping = settings.get("enable_mapping", False)
 
     depths = compute_depth_maps(left_grey_imgs, right_grey_imgs, fx, baseline)
@@ -40,28 +40,41 @@ def main():
 
     detector, matcher, strategy = initialize_feature_detector(settings)
     
-    # NEW: VO trajectory now returns list of (R, t)
+    # Run VO: returns list of (R, t)
     trajectory_cam = estimate_trajectory(left_grey_imgs, depths, K, detector, matcher, strategy)
 
-    # Extract camera centers from trajectory
+    # Extract raw camera positions
     cam_positions = np.array([t.flatten() for R, t in trajectory_cam if R is not None and t is not None])
 
+    # Load GT and convert VO to ENU
     ground_truth = load_oxts_ground_truth(settings["oxts_folder"])
     trajectory_enu = convert_to_ENU(cam_positions)
     gt = ground_truth[:len(trajectory_enu)]
 
+    # Raw RMSE
     raw_rmse = compute_ate_rmse(trajectory_enu, gt)
     if traj_mode in ["raw", "both"]:
         print(f"[ERROR] Raw VO RMSE: {raw_rmse:.4f} meters")
 
-    aligned_vo, scale = align_trajectories(trajectory_enu, gt)
+    # Umeyama alignment (anchored to origin)
+    aligned_vo, scale, R_align, t_align = align_trajectories(trajectory_enu, gt, anchor_origin=True)
     aligned_rmse = compute_ate_rmse(aligned_vo, gt)
     if traj_mode in ["aligned", "both"]:
         print(f"[INFO] Alignment scale: {scale:.4f}")
         print(f"[ERROR] Aligned VO RMSE: {aligned_rmse:.4f} meters")
 
-    print("Plot mode = ", plot_mode)
+    # Align full trajectory (R, t)
+    aligned_trajectory = []
+    for R, t in trajectory_cam:
+        if R is None or t is None:
+            aligned_trajectory.append(None)
+        else:
+            R_aligned = R_align @ R
+            t_aligned = scale * (R_align @ t) + t_align.reshape(3, 1)
+            aligned_trajectory.append((R_aligned, t_aligned))
 
+    # Visualization
+    print("Plot mode = ", plot_mode)
     # if traj_mode == "raw":
     #     plot_trajectories(trajectory_enu, gt, title="VO (Raw) vs Ground Truth", mode=plot_mode)
     # elif traj_mode == "aligned":
@@ -69,9 +82,11 @@ def main():
     # elif traj_mode == "both":
     #     plot_trajectories(trajectory_enu, gt, aligned_vo=aligned_vo, title="VO (Raw + Aligned) vs Ground Truth", mode=plot_mode)
 
-    # Mapping visualization
-    run_visual_mapping(left_colored_imgs, depths, trajectory_cam, K, settings, DEBUG_MAPPING)
-
+    # Mapping
+    if enable_mapping:
+        run_visual_mapping(
+        left_colored_imgs, depths, aligned_trajectory, K, settings, DEBUG_MAPPING,
+        aligned_vo=aligned_vo, gt=gt, R_align=R_align, t_align=t_align, scale=scale)
 
 if __name__ == "__main__":
     main()
