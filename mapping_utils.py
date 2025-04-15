@@ -66,31 +66,40 @@ def voxel_downsample(points, voxel_size):
     downsampled_points = [np.mean(pts, axis=0) for pts in voxel_dict.values()]
     return np.array(downsampled_points)
 
-def create_colored_point_cloud(img, depth_map, K, pose):
+def create_colored_point_cloud(img_color, depth, K, pose):
     fx, fy = K[0, 0], K[1, 1]
     cx, cy = K[0, 2], K[1, 2]
-    
-    h, w = depth_map.shape
-    u, v = np.meshgrid(np.arange(w), np.arange(h))
-    z = depth_map
 
-    valid = z > 0
-    x = (u[valid] - cx) * z[valid] / fx
-    y = (v[valid] - cy) * z[valid] / fy
-    points = np.stack((x, y, z[valid]), axis=1)
+    # Step 1: Backproject pixels to 3D
+    valid = depth > 0
+    z = depth[valid]
+    v, u = np.where(valid)
+    x = (u - cx) * z / fx
+    y = (v - cy) * z / fy
+    points = np.stack([x, y, z], axis=1)  # shape (N, 3)
 
-    # Color: grayscale or color image
-    if len(img.shape) == 2:  # grayscale
+    # Step 2: Normalize color to [0, 1]
+    img = img_color.astype(np.float32)
+    if len(img.shape) == 2 or img.shape[2] == 1:
         intensity = img[valid]
-        colors = np.stack([intensity, intensity, intensity], axis=1) / 255.0
-    else:  # RGB
+        colors = np.stack([intensity]*3, axis=1) / 255.0
+    else:
         colors = img[valid] / 255.0
 
-    # Transform to world frame
-    points_h = np.hstack([points, np.ones((points.shape[0], 1))])
-    world_points = (pose @ points_h.T).T[:, :3]
+    # Step 3: Convert pose (R, t) to 4x4 matrix if necessary
+    if isinstance(pose, tuple):
+        R, t = pose
+        pose_mat = np.eye(4)
+        pose_mat[:3, :3] = R
+        pose_mat[:3, 3] = t.squeeze()
+        pose = pose_mat
 
-    # Create colored point cloud
+    # Step 4: Transform to world frame
+    ones = np.ones((points.shape[0], 1))
+    points_h = np.hstack([points, ones])            # (N, 4)
+    world_points = (pose @ points_h.T).T[:, :3]      # (N, 3)
+
+    # Step 5: Create Open3D point cloud
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(world_points)
     pcd.colors = o3d.utility.Vector3dVector(colors)
@@ -216,3 +225,33 @@ def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None):
     plt.axis('equal')
     plt.grid(True)
     plt.show()
+
+def apply_umeyama_to_pointclouds(pcd_list, R_align, t_align, scale):
+    """
+    Applies Umeyama alignment (scale, rotation, translation) to each point cloud.
+
+    Args:
+        pcd_list (List[o3d.geometry.PointCloud]): List of point clouds in local SLAM frame.
+        R_align (np.ndarray): 3x3 rotation matrix.
+        t_align (np.ndarray): 3x1 translation vector.
+        scale (float): Scale factor.
+
+    Returns:
+        List[o3d.geometry.PointCloud]: Transformed point clouds.
+    """
+    transformed = []
+    for pcd in pcd_list:
+        pts = np.asarray(pcd.points)
+        aligned_pts = scale * (R_align @ pts.T).T + t_align.reshape(1, 3)
+        R_correction = np.array([
+                                    [-1,  0,  0],
+                                    [ 0, -1,  0],
+                                    [ 0,  0,  1]
+                                ])
+        aligned_pts = aligned_pts @ R_correction.T
+        pcd_aligned = o3d.geometry.PointCloud()
+        pcd_aligned.points = o3d.utility.Vector3dVector(aligned_pts)
+        pcd_aligned.colors = pcd.colors  # Keep the color
+        transformed.append(pcd_aligned)
+    return transformed
+

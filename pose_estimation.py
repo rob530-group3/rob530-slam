@@ -1,84 +1,82 @@
 import cv2
 import numpy as np
 from feature_matcher import match_features
-from tqdm import tqdm
 
-def estimate_trajectory(left_imgs, depth_maps, K, detector, matcher, strategy, use_tqdm=True):
-    fx = K[0, 0]
-    fy = K[1, 1]
-    cx = K[0, 2]
-    cy = K[1, 2]
 
-    R_f = np.eye(3)
-    t_f = np.zeros((3, 1))
-    trajectory = []
+def initialize_vo_state(initial_img_path, initial_depth, detector):
+    """
+    Initialize visual odometry by detecting features in the first frame.
 
-    prev_img = None
-    prev_kp = None
-    prev_des = None
-    prev_depth = None
+    Args:
+        initial_img_path (str): Path to the first grayscale image.
+        initial_depth (np.ndarray): Depth map corresponding to the first image.
+        detector: Feature detector object (e.g., ORB, SIFT).
 
-    print("---- Estimating trajectory ----")
+    Returns:
+        prev_img, prev_kp, prev_des, prev_depth: Initial VO state.
+    """
+    img = cv2.imread(initial_img_path, cv2.IMREAD_GRAYSCALE)
+    kp, des = detector.detectAndCompute(img, None)
+    return img, kp, des, initial_depth
 
-    iterator = tqdm(range(len(left_imgs))) if use_tqdm else range(len(left_imgs))
 
-    for i in iterator:
-        img = cv2.imread(left_imgs[i], cv2.IMREAD_GRAYSCALE)
-        depth = depth_maps[i]
+def estimate_vo_step(curr_img_path, curr_depth,
+                     prev_img, prev_kp, prev_des, prev_depth,
+                     K, detector, matcher, strategy,
+                     R_prev, t_prev):
+    """
+    Estimate the current camera pose relative to the previous frame using PnP.
 
-        kp, des = detector.detectAndCompute(img, None)
+    Args:
+        curr_img_path (str): Path to the current grayscale image.
+        curr_depth (np.ndarray): Depth map for the current frame.
+        prev_img, prev_kp, prev_des, prev_depth: Previous VO state.
+        K (np.ndarray): Camera intrinsic matrix.
+        detector, matcher, strategy: Feature matching setup.
+        R_prev (np.ndarray): Previous rotation matrix.
+        t_prev (np.ndarray): Previous translation vector.
 
-        if prev_img is not None and prev_des is not None:
-            matches = match_features(matcher, prev_des, des, strategy)
+    Returns:
+        curr_img, curr_kp, curr_des, curr_depth: Updated VO state.
+        (R_new, t_new): Estimated pose for current frame, or None if failed.
+    """
+    fx, fy = K[0, 0], K[1, 1]
+    cx, cy = K[0, 2], K[1, 2]
 
-            pts_3d = []
-            pts_2d = []
+    img = cv2.imread(curr_img_path, cv2.IMREAD_GRAYSCALE)
+    kp, des = detector.detectAndCompute(img, None)
 
-            for m in matches:
-                u_prev, v_prev = prev_kp[m.queryIdx].pt
-                u_curr, v_curr = kp[m.trainIdx].pt
-                u_prev, v_prev = int(u_prev), int(v_prev)
+    matches = match_features(matcher, prev_des, des, strategy)
 
-                if 0 <= u_prev < prev_depth.shape[1] and 0 <= v_prev < prev_depth.shape[0]:
-                    z = prev_depth[v_prev, u_prev]
+    pts_3d = []
+    pts_2d = []
 
-                    # if 0.1 < z < 80: # Filter bad depth
-                    x = (u_prev - cx) * z / fx
-                    y = (v_prev - cy) * z / fy
-                    pts_3d.append([x, y, z])
-                    pts_2d.append([u_curr, v_curr])
-                
-            # depth_vals = [pt[2] for pt in pts_3d if pt[2] > 0]
-            # if len(depth_vals) > 0:
-            #     print(f"[DEBUG] PnP Depth | mean: {np.mean(depth_vals):.2f}, min: {np.min(depth_vals):.2f}, max: {np.max(depth_vals):.2f}")
-            # else:
-            #     print(f"[WARNING] No valid depth points for frame {i}")
+    for m in matches:
+        u_prev, v_prev = prev_kp[m.queryIdx].pt
+        u_curr, v_curr = kp[m.trainIdx].pt
+        u_prev, v_prev = int(u_prev), int(v_prev)
 
-            if len(pts_3d) >= 6:
-                pts_3d = np.array(pts_3d, dtype=np.float32)
-                pts_2d = np.array(pts_2d, dtype=np.float32)
-                # print(f"[DEBUG] PnP input | 3D: {pts_3d.shape}, 2D: {pts_2d.shape}")    # debug
+        if 0 <= u_prev < prev_depth.shape[1] and 0 <= v_prev < prev_depth.shape[0]:
+            z = prev_depth[v_prev, u_prev]
+            if z <= 0:
+                continue
+            x = (u_prev - cx) * z / fx
+            y = (v_prev - cy) * z / fy
+            pts_3d.append([x, y, z])
+            pts_2d.append([u_curr, v_curr])
 
-                success, rvec, tvec, inliers = cv2.solvePnPRansac(
-                    pts_3d, pts_2d, K, None, reprojectionError=8.0, flags=cv2.SOLVEPNP_ITERATIVE)
+    if len(pts_3d) >= 6:
+        pts_3d = np.array(pts_3d, dtype=np.float32)
+        pts_2d = np.array(pts_2d, dtype=np.float32)
 
-                if success:
-                    R, _ = cv2.Rodrigues(rvec)
-                    t_f = t_f + R_f @ tvec
-                    R_f = R @ R_f
-                    trajectory.append((R_f.copy(), t_f.copy()))
+        success, rvec, tvec, _ = cv2.solvePnPRansac(
+            pts_3d, pts_2d, K, None, reprojectionError=8.0, flags=cv2.SOLVEPNP_ITERATIVE)
 
-                    if not use_tqdm:
-                        print(f"[Frame {i}] Δt = {np.linalg.norm(tvec):.3f}, Inliers = {len(inliers)}")
+        if success:
+            R, _ = cv2.Rodrigues(rvec)
+            t_new = t_prev + R_prev @ tvec
+            R_new = R @ R_prev
+            return img, kp, des, curr_depth, (R_new, t_new)
 
-                else:
-                    print(f"[Frame {i}] solvePnPRansac failed.")
-            else:
-                print(f"[Frame {i}] Not enough valid 3D–2D points: {len(pts_3d)}")
-
-        prev_img = img
-        prev_kp = kp
-        prev_des = des
-        prev_depth = depth
-
-    return trajectory
+    # VO failed for this frame
+    return img, kp, des, curr_depth, None
