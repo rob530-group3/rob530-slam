@@ -76,6 +76,30 @@ def estimate_vo_step(curr_img_path, curr_depth,
             R, _ = cv2.Rodrigues(rvec)
             t_new = t_prev + R_prev @ tvec
             R_new = R @ R_prev
+            
+            # # Added for debugging
+            # # Apply extrinsic correction to account for camera mounted in reverse
+            # R_correction = np.array([
+            #     [-1,  0,  0],
+            #     [ 0, -1,  0],
+            #     [ 0,  0,  1]
+            # ])
+            # t_correction = np.zeros((3, 1))  # no translation shift
+
+            # # Full transformation matrix (T = [R | t])
+            # T = np.eye(4)
+            # T[:3, :3] = R_new
+            # T[:3, 3:] = t_new
+
+            # # Correction matrix
+            # T_correction = np.eye(4)
+            # T_correction[:3, :3] = R_correction
+            # T_correction[:3, 3:] = t_correction
+
+            # # Apply correction: post-multiply (i.e., camera-to-world = T · correction)
+            # T_corrected = T @ T_correction
+            # R_new = T_corrected[:3, :3]
+            # t_new = T_corrected[:3, 3:]
             return img, kp, des, curr_depth, (R_new, t_new)
 
     # VO failed for this frame

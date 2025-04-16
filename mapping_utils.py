@@ -243,11 +243,12 @@ def apply_umeyama_to_pointclouds(pcd_list, R_align, t_align, scale):
     for pcd in pcd_list:
         pts = np.asarray(pcd.points)
         aligned_pts = scale * (R_align @ pts.T).T + t_align.reshape(1, 3)
-        R_correction = np.array([
-                                    [-1,  0,  0],
-                                    [ 0, -1,  0],
-                                    [ 0,  0,  1]
-                                ])
+        # R_correction = np.array([
+        #                             [-1,  0,  0],
+        #                             [ 0, -1,  0],
+        #                             [ 0,  0,  1]
+        #                         ])
+        R_correction = np.eye(3)
         aligned_pts = aligned_pts @ R_correction.T
         pcd_aligned = o3d.geometry.PointCloud()
         pcd_aligned.points = o3d.utility.Vector3dVector(aligned_pts)

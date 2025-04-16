@@ -18,21 +18,20 @@ DEBUG_MAPPING = False
 
 def merge_pointclouds_with_frames(pcd_list, cam_frames):
     """
-    Merge a list of point clouds and add coordinate frames (converted to point clouds).
+    Merge a list of point clouds and include camera frames (already as point clouds).
 
     Args:
-        pcd_list (list of o3d.geometry.PointCloud): List of point clouds.
-        cam_frames (list of o3d.geometry.TriangleMesh): List of camera frame meshes.
+        pcd_list (list of o3d.geometry.PointCloud): Point clouds.
+        cam_frames (list of o3d.geometry.PointCloud): Sampled camera frame points.
 
     Returns:
-        o3d.geometry.PointCloud: Merged point cloud including frames.
+        o3d.geometry.PointCloud: Merged point cloud including sampled camera frames.
     """
     merged = o3d.geometry.PointCloud()
     for pcd in pcd_list:
         merged += pcd
-    for frame in cam_frames:
-        sampled_frame = frame.sample_points_uniformly(number_of_points=50)
-        merged += sampled_frame
+    for frame_pcd in cam_frames:
+        merged += frame_pcd
     return merged
 
 def main():
@@ -110,17 +109,22 @@ def main():
 
     # Step 4: Apply Umeyama to point cloud map
     aligned_map = apply_umeyama_to_pointclouds(pointclouds, R_align, t_align, scale)
+    aligned_frames = []
+    for frame in cam_frames:
+        sampled = frame.sample_points_uniformly(number_of_points=50)
+        pts = np.asarray(sampled.points)
+        pts_aligned = scale * (R_align @ pts.T).T + t_align.reshape(1, 3)
+        sampled.points = o3d.utility.Vector3dVector(pts_aligned)
+        aligned_frames.append(sampled)
 
     # Step 5: Visualization
-    merged_map = merge_pointclouds_with_frames(aligned_map)
-
     plot_mode = settings.get("plot_mode", "3d")
     if plot_mode == "2d":
         map_mode = settings.get("map_mode", "height")
         print("2D map mode =", map_mode)
 
         # Merge point clouds and convert mesh frames to sampled points
-        merged_map = merge_pointclouds_with_frames(aligned_map, cam_frames)
+        merged_map = merge_pointclouds_with_frames(aligned_map, aligned_frames)
         plot_topdown_map(merged_map, mode=map_mode, aligned_vo=aligned_vo, gt=gt)
     elif plot_mode == "3d":
         visualize_colored_point_clouds(aligned_map + cam_frames)
