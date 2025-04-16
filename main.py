@@ -9,6 +9,7 @@ from mapping import run_visual_mapping
 from mapping_utils import plot_topdown_map, visualize_colored_point_clouds, apply_umeyama_to_pointclouds
 from loop_closure import *
 from pose_graph import *
+from gtsam import symbol_shorthand  # <- Add this
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
@@ -56,8 +57,6 @@ def main():
         plot_depth_map(depths, 0)
 
     detector, matcher, strategy = initialize_feature_detector(settings)
-    
-    loop_closure = LoopClosureDetector(detector, matcher)
 
     raw_trajectory = []
     raw_vo_positions = []
@@ -73,6 +72,8 @@ def main():
     
     loop_detector = LoopClosureDetector(detector, matcher)
     loop_constraints = []
+    
+    X = symbol_shorthand.X   
 
     # Step 2: SLAM loop
     print("---- Running SLAM loop ----")
@@ -158,25 +159,25 @@ def main():
     print("OPTIMIZED VALUES",optimized_values)
     print("[INFO] Optimization complete.")
 
-    # Extract optimized trajectory
+    optimized_trajectory = []
     raw_vo_positions = []
+
     for i in range(len(raw_trajectory)):
-        key = gtsam.symbol('x', i)
+        key = X(i)
+        print(key)
         if optimized_values.exists(key):
-            pose = optimized_values.atPose3(key)
-            t = pose.translation()
-            raw_vo_positions.append(np.array([t.x(), t.y(), t.z()]))
+            pose_i = optimized_values.atPose3(key)
+            R = pose_i.rotation().matrix()
+            t = pose_i.translation()
+            optimized_trajectory.append((R, t))
+            raw_vo_positions.append(t.flatten())
+        else:
+            optimized_trajectory.append(None)  # preserve indexing
 
     raw_vo_positions = np.array(raw_vo_positions)
-    print("RAW VO", raw_vo_positions)
 
     ground_truth = load_oxts_ground_truth(settings["oxts_folder"])
     gt = ground_truth[:len(raw_vo_positions)]
-    
-    print("[DEBUG] VO length:", len(raw_vo_positions))
-    print("[DEBUG] GT length:", len(gt))
-    print("[DEBUG] VO shape:", raw_vo_positions.shape)
-    print("[DEBUG] GT shape:", gt.shape)
 
     aligned_vo, scale, R_align, t_align = align_trajectories(raw_vo_positions, gt, anchor_origin=True)
     aligned_rmse = compute_ate_rmse(aligned_vo, gt)
@@ -189,7 +190,7 @@ def main():
         sampled = frame.sample_points_uniformly(number_of_points=50)
         pts = np.asarray(sampled.points)
         pts_aligned = scale * (R_align @ pts.T).T + t_align.reshape(1, 3)
-        sampled.points = o3d.utility.Vector3dVector(pts_aligned)
+        sampled.points = o3d.utility.Vector3dVector(pts)
         aligned_frames.append(sampled)
 
     # Step 5: Visualization
