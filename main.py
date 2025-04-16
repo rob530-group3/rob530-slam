@@ -193,7 +193,7 @@ def main():
     plot_mode = settings.get("plot_mode", "3d")
     if plot_mode == "2d":
         map_mode = settings.get("map_mode", "height")
-        print("2D map mode =", map_mode)
+        print("2D map mode =", map_mode, )
 
         # Merge point clouds and convert mesh frames to sampled points
         merged_map = merge_pointclouds_with_frames(aligned_map, aligned_frames)

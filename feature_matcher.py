@@ -23,6 +23,8 @@ def initialize_feature_detector(settings):
         norm_type = cv2.NORM_HAMMING
     else:
         raise ValueError(f"Unsupported feature_algorithm: {algo}")
+    
+    print("EXTRACTOR: ", algo)
 
     # === Select matcher and strategy ===
     if matcher_combo == "BF_crosscheck":
@@ -40,6 +42,8 @@ def initialize_feature_detector(settings):
         strategy = "KNN"
     else:
         raise ValueError(f"Unsupported matcher_type: {matcher_combo}")
+    
+    print("MATCHER = ", matcher_combo)
 
     return detector, matcher, strategy
 
@@ -47,7 +51,10 @@ def match_features(matcher, des1, des2, strategy):
     if strategy == "KNN":
         matches = matcher.knnMatch(des1, des2, k=2)
         good_matches = []
-        for m, n in matches:
+        for match in matches:
+            if len(match) < 2:
+                continue
+            m, n = match
             if m.distance < 0.7 * n.distance:
                 good_matches.append(m)
         return good_matches
