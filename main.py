@@ -1,7 +1,7 @@
 from config import load_settings
 from calibration import load_calibration
 from image_loader import load_image_pairs, compute_depth_maps
-from feature_matcher import initialize_feature_detector
+from feature_matcher import *
 from pose_estimation import initialize_vo_state, estimate_vo_step
 from ground_truth import load_oxts_ground_truth
 from plot_utils import plot_trajectories, align_trajectories, compute_ate_rmse, plot_depth_map
@@ -9,7 +9,7 @@ from mapping import run_visual_mapping
 from mapping_utils import plot_topdown_map, visualize_colored_point_clouds, apply_umeyama_to_pointclouds
 from loop_closure import *
 from pose_graph import *
-from gtsam import symbol_shorthand  # <- Add this
+from gtsam import symbol_shorthand 
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
@@ -70,7 +70,7 @@ def main():
     raw_trajectory.append((R_f.copy(), t_f.copy()))
     raw_vo_positions.append(t_f.flatten())
     
-    loop_detector = LoopClosureDetector(detector, matcher)
+    loop_detector = LoopClosureDetector(detector, matcher, strategy)
     loop_constraints = []
     
     X = symbol_shorthand.X   
@@ -103,11 +103,7 @@ def main():
             img_j, kp_j, des_j = loop_detector.keyframes[matched_idx]
 
             # Match descriptors (recompute if necessary)
-            matches = matcher.knnMatch(des_i, des_j, k=2)
-            good_matches = []
-            for m, n in matches:
-                if m.distance < 0.75 * n.distance:
-                    good_matches.append(m)
+            good_matches = match_features(matcher, des_i, des_j, strategy)
 
             # Prepare 3D-2D correspondences for PnP
             pts_3d = []
@@ -158,6 +154,7 @@ def main():
     optimized_values = build_pose_graph(raw_trajectory, loop_constraints)
     print("[INFO] Optimization complete.")
 
+
     optimized_trajectory = []
     raw_vo_positions = []
 
@@ -179,16 +176,17 @@ def main():
 
     aligned_vo, scale, R_align, t_align = align_trajectories(raw_vo_positions, gt, anchor_origin=True)
     aligned_rmse = compute_ate_rmse(aligned_vo, gt)
-    print(f"[INFO] Aligned VO RMSE: {aligned_rmse:.4f}")
+    print(f"[INFO] Alignment scale: {scale:.4f}")
+    print(f"[ERROR] Aligned VO RMSE: {aligned_rmse:.4f} meters")
 
     # Step 4: Apply Umeyama to point cloud map
     aligned_map = apply_umeyama_to_pointclouds(pointclouds, R_align, t_align, scale)
     aligned_frames = []
-    for frame in cam_frames:
+    for i, frame in enumerate(cam_frames):
         sampled = frame.sample_points_uniformly(number_of_points=50)
         pts = np.asarray(sampled.points)
         pts_aligned = scale * (R_align @ pts.T).T + t_align.reshape(1, 3)
-        sampled.points = o3d.utility.Vector3dVector(pts)
+        sampled.points = o3d.utility.Vector3dVector(pts_aligned)
         aligned_frames.append(sampled)
 
     # Step 5: Visualization
