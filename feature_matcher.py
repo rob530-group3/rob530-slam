@@ -24,7 +24,7 @@ def initialize_feature_detector(settings):
     else:
         raise ValueError(f"Unsupported feature_algorithm: {algo}")
     
-    print("EXTRACTOR: ", algo)
+    print("EXTRACTOR:", algo)
 
     # === Select matcher and strategy ===
     if matcher_combo == "BF_crosscheck":
@@ -43,7 +43,7 @@ def initialize_feature_detector(settings):
     else:
         raise ValueError(f"Unsupported matcher_type: {matcher_combo}")
     
-    print("MATCHER = ", matcher_combo)
+    print("MATCHER:", matcher_combo)
 
     return detector, matcher, strategy
 

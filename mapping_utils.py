@@ -159,7 +159,7 @@ def remove_statistical_outliers(pcd, nb_neighbors=20, std_ratio=2.0):
     return pcd.select_by_index(ind)
 
 
-def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None):
+def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None, plot_map=True):
     """
     Visualize a 2D top-down map from a 3D point cloud with optional trajectory overlays.
 
@@ -179,35 +179,36 @@ def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None):
 
     plt.figure(figsize=(8, 6))
 
-    if mode == "height":
-        z = points[:, 2]
-        sc = plt.scatter(x, y, c=z, cmap='viridis', s=1)
-        plt.colorbar(sc, label="Height (Z)")
+    if plot_map:
+        if mode == "height":
+            z = points[:, 2]
+            sc = plt.scatter(x, y, c=z, cmap='viridis', s=1)
+            plt.colorbar(sc, label="Height (Z)")
 
-    elif mode == "rgb":
-        colors = np.asarray(pcd.colors)
-        # Clip RGB values to [0,1] to avoid ValueErrors
-        colors = np.clip(colors, 0.0, 1.0)
+        elif mode == "rgb":
+            colors = np.asarray(pcd.colors)
+            # Clip RGB values to [0,1] to avoid ValueErrors
+            colors = np.clip(colors, 0.0, 1.0)
 
-        # Only keep points that have valid color entries
-        if len(colors) != len(x):
-            print("[WARN] Color count does not match point count — skipping RGB plot.")
+            # Only keep points that have valid color entries
+            if len(colors) != len(x):
+                print("[WARN] Color count does not match point count — skipping RGB plot.")
+            else:
+                plt.scatter(x, y, c=colors, s=1)
+
+        elif mode == "density":
+            hist, xedges, yedges = np.histogram2d(x, y, bins=500)
+            plt.imshow(
+                hist.T,
+                origin='lower',
+                extent=[x.min(), x.max(), y.min(), y.max()],
+                cmap='hot',
+                aspect='auto'
+            )
+            plt.colorbar(label='Point Density')
+
         else:
-            plt.scatter(x, y, c=colors, s=1)
-
-    elif mode == "density":
-        hist, xedges, yedges = np.histogram2d(x, y, bins=500)
-        plt.imshow(
-            hist.T,
-            origin='lower',
-            extent=[x.min(), x.max(), y.min(), y.max()],
-            cmap='hot',
-            aspect='auto'
-        )
-        plt.colorbar(label='Point Density')
-
-    else:
-        raise ValueError("Invalid mode. Choose from 'height', 'rgb', or 'density'.")
+            raise ValueError("Invalid mode. Choose from 'height', 'rgb', or 'density'.")
 
     # Optional trajectory overlays
     if aligned_vo is not None:

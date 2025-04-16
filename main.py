@@ -191,13 +191,15 @@ def main():
 
     # Step 5: Visualization
     plot_mode = settings.get("plot_mode", "3d")
+    enable_mapping_mode = settings.get("enable_mapping", "True").strip().lower() == "true"
+
     if plot_mode == "2d":
         map_mode = settings.get("map_mode", "height")
         print("2D map mode =", map_mode, )
 
         # Merge point clouds and convert mesh frames to sampled points
         merged_map = merge_pointclouds_with_frames(aligned_map, aligned_frames)
-        plot_topdown_map(merged_map, mode=map_mode, aligned_vo=aligned_vo, gt=gt)
+        plot_topdown_map(merged_map, mode=map_mode, aligned_vo=aligned_vo, gt=gt, plot_map=enable_mapping_mode)
     elif plot_mode == "3d":
         visualize_colored_point_clouds(aligned_map + cam_frames)
 
