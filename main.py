@@ -96,7 +96,7 @@ def main():
 
         matched_idx = loop_detector.detect_loop(prev_img, i)
         if matched_idx is not None:
-            print(f"[LOOP CLOSURE] Frame {i} matched with Frame {matched_idx}")
+            # print(f"[LOOP CLOSURE] Frame {i} matched with Frame {matched_idx}")
 
             # Use keypoints and descriptors to estimate relative pose between i and matched_idx
             img_i, kp_i, des_i = loop_detector.keyframes[-1]
@@ -156,7 +156,6 @@ def main():
     # Step 3: Trajectory alignment
     print("[INFO] Running pose graph optimization...")
     optimized_values = build_pose_graph(raw_trajectory, loop_constraints)
-    print("OPTIMIZED VALUES",optimized_values)
     print("[INFO] Optimization complete.")
 
     optimized_trajectory = []
@@ -164,7 +163,6 @@ def main():
 
     for i in range(len(raw_trajectory)):
         key = X(i)
-        print(key)
         if optimized_values.exists(key):
             pose_i = optimized_values.atPose3(key)
             R = pose_i.rotation().matrix()
