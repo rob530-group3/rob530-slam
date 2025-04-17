@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+import open3d as o3d
 
 def plot_trajectories(vo, gt, aligned_vo=None, title="Trajectory", mode="3d", anchor_origin=True):
     if anchor_origin:
@@ -89,5 +90,23 @@ def plot_depth_map(depths, i):
     plt.colorbar()
     plt.title("Sample Depth Map")
     plt.show()
+    
+def merge_pointclouds_with_frames(pcd_list, cam_frames):
+    """
+    Merge a list of point clouds and include camera frames (already as point clouds).
+
+    Args:
+        pcd_list (list of o3d.geometry.PointCloud): Point clouds.
+        cam_frames (list of o3d.geometry.PointCloud): Sampled camera frame points.
+
+    Returns:
+        o3d.geometry.PointCloud: Merged point cloud including sampled camera frames.
+    """
+    merged = o3d.geometry.PointCloud()
+    for pcd in pcd_list:
+        merged += pcd
+    for frame_pcd in cam_frames:
+        merged += frame_pcd
+    return merged
     
 
