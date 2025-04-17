@@ -4,11 +4,12 @@ from image_loader import load_image_pairs, compute_depth_maps
 from feature_matcher import *
 from pose_estimation import initialize_vo_state, estimate_vo_step
 from ground_truth import load_oxts_ground_truth
-from plot_utils import plot_trajectories, align_trajectories, compute_ate_rmse, plot_depth_map
+from plot_utils import *
 from mapping import run_visual_mapping
-from mapping_utils import plot_topdown_map, visualize_colored_point_clouds, apply_umeyama_to_pointclouds
+from mapping_utils import *
 from loop_closure import *
 from pose_graph import *
+from sensor_fusion import *
 from gtsam import symbol_shorthand 
 from tqdm import tqdm
 import numpy as np
@@ -16,27 +17,11 @@ import matplotlib.pyplot as plt
 import cv2
 import open3d as o3d
 import gtsam
+import os
 
 DEBUG_DEPTH = False
 DEBUG_MAPPING = False
 
-def merge_pointclouds_with_frames(pcd_list, cam_frames):
-    """
-    Merge a list of point clouds and include camera frames (already as point clouds).
-
-    Args:
-        pcd_list (list of o3d.geometry.PointCloud): Point clouds.
-        cam_frames (list of o3d.geometry.PointCloud): Sampled camera frame points.
-
-    Returns:
-        o3d.geometry.PointCloud: Merged point cloud including sampled camera frames.
-    """
-    merged = o3d.geometry.PointCloud()
-    for pcd in pcd_list:
-        merged += pcd
-    for frame_pcd in cam_frames:
-        merged += frame_pcd
-    return merged
 
 def main():
     settings = load_settings("settings.txt")
@@ -50,8 +35,34 @@ def main():
         settings["timestamp_file_left"],
         settings["timestamp_file_right"]
     )
-
+    aligned_stereo_depths=[]
     depths = compute_depth_maps(left_grey_imgs, right_grey_imgs, fx, baseline)
+    
+    print("---- Combining LiDAR and Stereo images ----")
+    
+    for i in tqdm(range(len(depths))):
+        frame_id = f"{i:010d}"
+        lidar_path = os.path.join(os.path.expanduser(settings["velodyne_folder"]), f"{frame_id}.bin")
+        image_path = os.path.join(os.path.expanduser(settings["left_colored_folder"]), f"{frame_id}.png")
+
+        if not os.path.exists(lidar_path):
+            print(f"[WARN] LiDAR file {lidar_path} does not exist")
+            aligned_stereo_depths.append(depths[i])
+            continue
+
+        overlay, lidar_depth_map, _, _ = lidar_image_overlay_pipeline(
+            frame_id=frame_id,
+            image_path=image_path,
+            lidar_path=lidar_path,
+            calib_cam_path=os.path.expanduser(settings["calib_file"]),
+            calib_velo_path=os.path.expanduser(settings["calib_file"]).replace("calib_cam_to_cam.txt", "calib_velo_to_cam.txt"),
+            cam_id="02",
+            show=False
+        )
+        aligned_stereo = refine_stereo_with_lidar(depths[i], lidar_depth_map)
+        aligned_stereo_depths.append(aligned_stereo)
+
+    depths = aligned_stereo_depths
 
     if DEBUG_DEPTH:
         plot_depth_map(depths, 0)
@@ -153,7 +164,6 @@ def main():
     print("[INFO] Running pose graph optimization...")
     optimized_values = build_pose_graph(raw_trajectory, loop_constraints)
     print("[INFO] Optimization complete.")
-
 
     optimized_trajectory = []
     raw_vo_positions = []
