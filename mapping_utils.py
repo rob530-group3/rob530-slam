@@ -159,16 +159,11 @@ def remove_statistical_outliers(pcd, nb_neighbors=20, std_ratio=2.0):
     return pcd.select_by_index(ind)
 
 
-def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None, plot_map=True):
-    """
-    Visualize a 2D top-down map from a 3D point cloud with optional trajectory overlays.
+import open3d as o3d
+import matplotlib.pyplot as plt
+import numpy as np
 
-    Args:
-        pcd (o3d.geometry.PointCloud): Input colored point cloud.
-        mode (str): Visualization mode - 'height', 'rgb', or 'density'.
-        aligned_vo (np.ndarray): Optional aligned VO trajectory (Nx3).
-        gt (np.ndarray): Optional ground truth trajectory (Nx3).
-    """
+def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None, plot_map=True):
     points = np.asarray(pcd.points)
     if len(points) == 0:
         print("[WARN] Point cloud is empty.")
@@ -177,25 +172,52 @@ def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None, plot_map=True
     x = points[:, 0]
     y = points[:, 1]
 
+    # Determine cropping bounds from trajectories
+    traj = []
+    if aligned_vo is not None:
+        traj.append(aligned_vo[:, :2])
+    if gt is not None:
+        traj.append(gt[:, :2])
+
+    xlim, ylim = None, None
+    if traj:
+        all_traj = np.vstack(traj)
+        x_min, y_min = all_traj.min(axis=0) - 20
+        x_max, y_max = all_traj.max(axis=0) + 20
+        xlim = (x_min, x_max)
+        ylim = (y_min, y_max)
+
+        # Filter point cloud
+        mask = (x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)
+        points_filtered = points[mask]
+
+        colors_filtered = np.asarray(pcd.colors)[mask] if len(pcd.colors) == len(points) else None
+
+        pcd_filtered = o3d.geometry.PointCloud()
+        pcd_filtered.points = o3d.utility.Vector3dVector(points_filtered)
+        if colors_filtered is not None:
+            pcd_filtered.colors = o3d.utility.Vector3dVector(colors_filtered)
+
+        # Update x, y for plotting
+        x = points_filtered[:, 0]
+        y = points_filtered[:, 1]
+    else:
+        pcd_filtered = pcd  # Use full cloud if no traj
+
     plt.figure(figsize=(8, 6))
 
     if plot_map:
         if mode == "height":
-            z = points[:, 2]
+            z = np.asarray(pcd_filtered.points)[:, 2]
             sc = plt.scatter(x, y, c=z, cmap='viridis', s=1)
             plt.colorbar(sc, label="Height (Z)")
-
         elif mode == "rgb":
-            colors = np.asarray(pcd.colors)
-            # Clip RGB values to [0,1] to avoid ValueErrors
+            colors = np.asarray(pcd_filtered.colors)
             colors = np.clip(colors, 0.0, 1.0)
-
-            # Only keep points that have valid color entries
             if len(colors) != len(x):
-                print("[WARN] Color count does not match point count — skipping RGB plot.")
+                print("[WARN] RGB mismatch — skipping RGB mode.")
             else:
                 plt.scatter(x, y, c=colors, s=1)
-
         elif mode == "density":
             hist, xedges, yedges = np.histogram2d(x, y, bins=500)
             plt.imshow(
@@ -206,14 +228,11 @@ def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None, plot_map=True
                 aspect='auto'
             )
             plt.colorbar(label='Point Density')
-
         else:
             raise ValueError("Invalid mode. Choose from 'height', 'rgb', or 'density'.")
 
-    # Optional trajectory overlays
     if aligned_vo is not None:
-        plt.plot(aligned_vo[:, 0], aligned_vo[:, 1], 'c-', label='Aligned VO', linewidth=2)
-
+        plt.plot(aligned_vo[:, 0], aligned_vo[:, 1], 'b-', label='Aligned VO', linewidth=2)
     if gt is not None:
         plt.plot(gt[:, 0], gt[:, 1], 'r--', label='Ground Truth', linewidth=2)
 
@@ -224,8 +243,11 @@ def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None, plot_map=True
     plt.xlabel("X (East)")
     plt.ylabel("Y (North)")
     plt.axis('equal')
+    if xlim is not None: plt.xlim(xlim)
+    if ylim is not None: plt.ylim(ylim)
     plt.grid(True)
     plt.show()
+
 
 def apply_umeyama_to_pointclouds(pcd_list, R_align, t_align, scale):
     """
