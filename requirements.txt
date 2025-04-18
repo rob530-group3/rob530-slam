@@ -1,0 +1,9 @@
+gtsam==4.2
+matplotlib==3.5.1
+numpy==1.21.5
+open3d==0.19.0
+opencv_python==4.11.0.86
+Pillow==9.0.1
+Pillow==11.2.1
+pyproj==3.7.1
+tqdm==4.67.1

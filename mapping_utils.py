@@ -171,6 +171,7 @@ def plot_topdown_map(pcd, mode="height", aligned_vo=None, gt=None, plot_map=True
 
     x = points[:, 0]
     y = points[:, 1]
+    z = points[:, 2]
 
     # Determine cropping bounds from trajectories
     traj = []
