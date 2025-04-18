@@ -96,7 +96,7 @@ def lidar_image_overlay_pipeline(
     return overlay, depth_map, pts_2d, depths
 
 
-def refine_stereo_with_lidar(stereo_depth, lidar_depth, method='blend', alpha=0.8, threshold=1.0):
+def refine_stereo_with_lidar(stereo_depth, lidar_depth, method='blend', alpha=0.5, threshold=1.0):
 
     assert stereo_depth.shape == lidar_depth.shape, "Shape mismatch"
     
