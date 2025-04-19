@@ -19,7 +19,7 @@ import open3d as o3d
 import gtsam
 import os
 
-DEBUG_DEPTH = False
+DEBUG_DEPTH = True
 DEBUG_MAPPING = False
 
 
@@ -37,6 +37,10 @@ def main():
     )
     aligned_stereo_depths=[]
     depths = compute_depth_maps(left_grey_imgs, right_grey_imgs, fx, baseline)
+    
+    if DEBUG_DEPTH:
+        # check before applying LiDAR
+        plot_depth_map(depths, 74)
     
     print("---- Combining LiDAR and Stereo images ----")
     
@@ -65,7 +69,8 @@ def main():
     depths = aligned_stereo_depths
 
     if DEBUG_DEPTH:
-        plot_depth_map(depths, 0)
+        # check after applying LiDAR
+        plot_depth_map(depths, 74)
 
     detector, matcher, strategy = initialize_feature_detector(settings)
 

@@ -1,6 +1,6 @@
 # ==== Algorithm Settings ====
-feature_algorithm = AKAZE        # Options: ORB, SIFT, SURF, AKAZE
-matcher_type = BF_crosscheck   # Options: BF_crosscheck, BF_KNN, FLANN_KNN
+feature_algorithm = SIFT       # Options: ORB, SIFT, SURF, AKAZE
+matcher_type = BF_KNN  # Options: BF_crosscheck, BF_KNN, FLANN_KNN
 plot_mode = 2d         # Options: 2d, 3d, None
 
 # localization
@@ -12,12 +12,12 @@ frame_interval = 20     # Number of frames to add the coordinates: Less interval
 map_mode = rgb  # Options: rgb, height, density (Only for 2d maps)
 
 # ==== File Paths ====
-left_grey_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0002_sync/image_00/data
-right_grey_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0002_sync/image_01/data
-left_colored_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0002_sync/image_02/data
-right_colored_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0002_sync/image_03/data
-timestamp_file_left= ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0002_sync/image_00/timestamps.txt
-timestamp_file_right= ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0002_sync/image_01/timestamps.txt
+left_grey_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_00/data
+right_grey_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_01/data
+left_colored_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_02/data
+right_colored_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_03/data
+timestamp_file_left= ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_00/timestamps.txt
+timestamp_file_right= ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/image_01/timestamps.txt
 calib_file = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_calib/2011_09_26/calib_cam_to_cam.txt
-oxts_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0002_sync/oxts/data
-velodyne_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0002_sync/velodyne_points/data
+oxts_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/oxts/data
+velodyne_folder = ~/Documents/rob530/rob530-slam/raw/2011_09_26/2011_09_26_drive_0011_sync/velodyne_points/data
